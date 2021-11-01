@@ -1,6 +1,6 @@
 ## Introduction
 In this blogpost we'll build a social network application using RediSearch and NodeJS. This is the idea that
-we used for our app Skillmarket, which we developed as part of the Redis Hackathon in 2020.
+we used for our app [Skillmarket](https://devpost.com/software/skill-market-t5cova), which we developed as part of the [Redis "Beyond Cache" Hackathon](https://redisbeyondcache2020.devpost.com/) in 2020.
 
 The goal of the application is to match users with complementary skills. It will allow users to register and
 provide some information about themselves, like location, areas of expertise and interests. Using RediSearch
@@ -133,9 +133,20 @@ If we expand the search radius to 500km we'll also see that Charles is returned:
    8) "2.2945412,48.8583206"
 ```
 
-## Building a minimal backend
+### Cleanup
+
+We can now remove the docker instance and move on to building the web application, running the following command
+from outside the instance:
+```bash
+docker rm -f redis
+```
+
+## Building a minimal backend in Typescript
 After understanding how the index works, let's build a minimal backend API in NodeJS that will allow us to
 create a user, and query for matching users.
+
+Please note that this is just an example, and we're not providing poper validation or error handling,
+nor other features required for the backend (e.g. authentication).
 
 ### Redis client
 We'll use the [node-redis](https://www.npmjs.com/package/redis) package to create a client:
@@ -227,7 +238,7 @@ function _userToSetRequestString(user: User): string[] {
     return result;
 }
 ```
-We will create a UUID for the user, and then transform the TAG and GEO fields to the redis format. Here's an example:
+We will create a UUID for the user, and then transform the TAG and GEO fields to the redis format. Here's an example of how these two formats look like:
 
 <table>
 <tr>
@@ -334,8 +345,9 @@ function _usersFromSearchResponseArray(response: any[]): User[] {
 }
 ```
 Here we swap interests and expertises to find the complementary skill set, and we build the query that we used
-previously in the CLI example. we finally call the `FT.SEARCH` functio, and we build the model object from the
-response, which comes as an array.
+previously in the CLI example. we finally call the `FT.SEARCH` function, and we build the model object from the
+response, which comes as an array. Results are filtered to exclude the 
+current user from the matches list.
 
 ### Web API
 
@@ -377,7 +389,7 @@ app.get("/users/:userId/matches", async (req, res) => {
 ```
 
 # Full code example
-The code used in this blogpost can be found in the GitHub repo. The bakcend together with redis can be launched
+The code used in this blogpost can be found in the [GitHub repo](https://github.com/julianmateu/skillmarket-blogpost). The bakcend together with redis can be launched
 using docker compose:
 ```bash
 docker compose up -d --build

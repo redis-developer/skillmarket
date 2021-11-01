@@ -7,23 +7,21 @@ async function findUserById(userId: string): Promise<User> {
     if (!response) {
         throw new Error('User Not Found');
     }
-    return _userFromResponse(userId, Object.entries(response).flat());
+    return _userFromFlatEntriesArray(userId, Object.entries(response).flat());
 }
 
 async function createUser(user: User): Promise<string> {
     const id = uuid();
-    redisearchClient.hsetAsync(
-        `users:${id}`,
-        _userToRequest(user)
-    );
+    redisearchClient.hsetAsync(`users:${id}`, _userToSetRequestString(user));
     return id;
 }
 
 async function findMatchesForUser(user: User, radiusKm: number): Promise<User[]> {
-    return (await _findMatches(user.interests, user.expertises, user.location, radiusKm)).filter(u => u.id !== user.id);
+    const allMatches: User[] = await _findMatches(user.interests, user.expertises, user.location, radiusKm);
+    return allMatches.filter(u => u.id !== user.id);
 }
 
-function _userToRequest(user: User): string[] {
+function _userToSetRequestString(user: User): string[] {
     const { id, location, interests, expertises, ...fields } = user;
     let result = Object.entries(fields).flat();
     result.push('interests', interests.join(', '));
@@ -37,63 +35,42 @@ async function _findMatches(expertises: string[], interests: string[], location:
     query += ` @expertises:{${expertises.join('|')}}`
     query += ` @location:[${location.longitude} ${location.latitude} ${radiusKm} km]`;
 
-    const response = await redisearchClient.ft_searchAsync(
-        'idx:users',
-        query
-    );
+    const response = await redisearchClient.ft_searchAsync('idx:users', query);
 
-    return _usersFromResponse(response);
+    return _usersFromSearchResponseArray(response);
 }
 
-function _usersFromResponse(response: any[]): User[] {
+function _usersFromSearchResponseArray(response: any[]): User[] {
     let users = [];
 
+    // The search response is an array where the first element indicates the number of results, and then
+    // the array contains all matches in order, one element is they key and the next is the object, e.g.:
+    // [2, key1, object1, key2, object2]
     for (let i = 1; i <= 2 * response[ 0 ]; i += 2) {
-        const user: User = _userFromResponse(response[ i ].replace('users:', ''), response[ i + 1 ]);
-
+        const user: User = _userFromFlatEntriesArray(response[ i ].replace('users:', ''), response[ i + 1 ]);
         users.push(user);
     }
 
     return users;
 }
 
-function _userFromResponse(id: string, response: any[]): User {
-    let user: User = {
-        id: id,
-        name: '',
-        interests: [],
-        expertises: [],
-        location: undefined
-    };
+function _userFromFlatEntriesArray(id: string, flatEntriesArray: any[]): User {
+    let user: any = {};
 
-    let userArray = response;
-
-    for (let j = 0; j < userArray.length; j += 2) {
-        let key: string = userArray[ j ];
-        let value: string = userArray[ j + 1 ];
-
-        switch (key) {
-            case 'location':
-                const location: string[] = value.split(',');
-                user.location = { longitude: Number(location[ 0 ]), latitude: Number(location[ 1 ]) };
-                break;
-
-            case 'expertises':
-                user.expertises = value.split(',');
-                break;
-
-            case 'interests':
-                user.interests = value.split(',');
-                break;
-
-
-            default:
-                user[ key ] = value;
-                break;
-        }
+    // The flat entries array contains all keys and values as elements in an array, e.g.:
+    // [key1, value1, key2, value2]
+    for (let j = 0; j < flatEntriesArray.length; j += 2) {
+        let key: string = flatEntriesArray[ j ];
+        let value: string = flatEntriesArray[ j + 1 ];
+        user[ key ] = value;
     }
 
-    return user;
+    const location: string[] = user.location.split(',');
+    user.location = { longitude: Number(location[ 0 ]), latitude: Number(location[ 1 ]) };
+    user.expertises = user.expertises.split(',');
+    user.interests = user.interests.split(',');
+
+    return {id, ...user};
 }
 
 export default {

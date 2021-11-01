@@ -18,7 +18,7 @@ type RediSearchClient = RedisClient & {
     hsetAsync?(key: string, fields: string[]): Promise<any>
     ft_createAsync?(index: string, args: string[]): Promise<any>
     ft_searchAsync?(index: string, query: string): Promise<any>
-}
+};
 
 addCommand('ft.create');
 addCommand('ft.search');
@@ -29,23 +29,10 @@ client.ft_createAsync = promisify(client.ft_create).bind(client);
 client.ft_searchAsync = promisify(client.ft_search).bind(client);
 
 export async function createUserIndex() {
-    createIndex(
-        'idx:users',
-        'ON hash PREFIX 1 "users:" SCHEMA interests TAG expertises TAG location GEO'
-    );
-}
-
-async function createIndex(name: string, args: string): Promise<any> {
     client.ft_createAsync(
-        name,
-        _splitArgs(args)
-    ).catch(() => undefined);
-}
-
-function _splitArgs(args: string): string[] {
-    return args
-        .match(/(?:[^\s"]+|"[^"]*")+/g)
-        .map(e => e.replaceAll('"', ''));
+        'idx:users',
+        ['ON', 'hash', 'PREFIX', '1', 'users:', 'SCHEMA', 'interests', 'TAG', 'expertises', 'TAG', 'location', 'GEO']
+    );
 }
 
 export default client;

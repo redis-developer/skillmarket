@@ -3,7 +3,7 @@ import userController from './userController';
 import { createUserIndex } from './redisearchClient';
 import express = require("express");
 
-const port = 8080; // default port to listen
+const port = 8080;
 
 const app = express();
 app.use(express.json());
@@ -44,8 +44,7 @@ createUserIndex().then(() => {
     console.log('User index created');
 });
 
-// start the Express server
 app.listen(port, () => {
-    console.log(`server started at http://localhost:${port}`);
+    console.log(`server listening on port ${port}`);
 });
 

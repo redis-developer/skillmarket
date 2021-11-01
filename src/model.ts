@@ -1,6 +1,6 @@
 export interface Location {
     latitude: number;
-    longitude: Number;
+    longitude: number;
 };
 
 export interface User {

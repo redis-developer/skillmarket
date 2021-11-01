@@ -136,3 +136,242 @@ If we expand the search radius to 500km we'll also see that Charles is returned:
 ## Building a minimal backend
 After understanding how the index works, let's build a minimal backend API in NodeJS that will allow us to
 create a user, and query for matching users.
+
+### Redis client
+We'll use the [node-redis](https://www.npmjs.com/package/redis) package to create a client:
+
+```typescript
+const {
+    REDIS_PORT = 6379,
+    REDIS_HOST = 'localhost',
+} = process.env;
+
+const client: RediSearchClient = createClient({
+    port: Number(REDIS_PORT),
+    host: REDIS_HOST,
+});
+```
+
+Given that the raw client does not include the functions from the rediSearch module, we have to add them by 
+defining a new type and adding the commands (this is what the [redis-redisearch](https://www.npmjs.com/package/redis-redisearch) module does, and there's also another module named [redisearchclient](https://www.npmjs.com/package/redisearchclient) which also provides more functions instead of providing arguments as strings).
+```typescript
+
+type RediSearchClient = RedisClient & {
+    ft_create?(args: any): any;
+    ft_search?(args: any): any;
+    hgetallAsync?(key: string): Promise<any>
+    hsetAsync?(key: string, fields: string[]): Promise<any>
+    ft_createAsync?(index: string, args: string[]): Promise<any>
+    ft_searchAsync?(index: string, query: string): Promise<any>
+};
+
+addCommand('ft.create');
+addCommand('ft.search');
+```
+
+All the functions in the library use callbacks, but we can use `promisify` to enable the `async/await` syntax:
+```typescript
+client.hgetallAsync = promisify(client.hgetall).bind(client);
+client.hsetAsync = promisify(client.hset).bind(client);
+client.ft_createAsync = promisify(client.ft_create).bind(client);
+client.ft_searchAsync = promisify(client.ft_search).bind(client);
+```
+
+Finally, let's define a function to create the user index, as we did before in the CLI example:
+```typescript
+async function createUserIndex() {
+    client.ft_createAsync(
+        'idx:users',
+        ['ON', 'hash', 'PREFIX', '1', 'users:', 'SCHEMA', 'interests', 'TAG', 'expertises', 'TAG', 'location', 'GEO']
+    );
+}
+```
+
+### User controller
+
+Let's define the functions that the controller will use to expose a simple API on top of Redis. We'll define 3 functions:
+- `findUserById(userId)`
+- `createUser(user)`
+- `findMatchesForUser(user)`
+
+But first let's define the model we'll use for the users:
+```typescript
+interface Location {
+    latitude: number;
+    longitude: number;
+};
+
+interface User {
+    id?: string;
+    name: string;
+    interests: string[];
+    expertises: string[];
+    location: Location
+};
+```
+
+Let's start with the function to create a user from the model object:
+```typescript
+async function createUser(user: User): Promise<string> {
+    const id = uuid();
+    redisearchClient.hsetAsync(`users:${id}`, _userToSetRequestString(user));
+    return id;
+}
+
+function _userToSetRequestString(user: User): string[] {
+    const { id, location, interests, expertises, ...fields } = user;
+    let result = Object.entries(fields).flat();
+    result.push('interests', interests.join(', '));
+    result.push('expertises', expertises.join(', '));
+    result.push('location', `${location.longitude},${location.latitude}`);
+    return result;
+}
+```
+We will create a UUID for the user, and then transform the TAG and GEO fields to the redis format. Here's an example:
+
+<table>
+<tr>
+<td>user object</td>
+<td>set request string</td>
+</tr>
+<tr>
+<td>
+
+```json
+{
+   "name":"Alice",
+   "expertises": [
+      "piano",
+      "dancing"
+   ],
+   "interests": [
+      "spanish",
+      "bowling"
+   ],
+   "location":{
+      "longitude": 2.2948552,
+      "latitude":48.8736537
+   }
+}
+```
+</td>
+<td>
+
+```json
+{
+   "name":"Alice",
+   "expertises": "piano, dancing",
+   "interests": "spanish, bowling",
+   "location": "2.2948552,48.8736537"
+}
+```
+</td>
+</tr>
+</table>
+
+
+Let's now look at the logic to retrieve an existing user from the Hash table using `HGETALL`:
+```typescript
+async function findUserById(userId: string): Promise<User> {
+    const response = await redisearchClient.hgetallAsync(`users:${userId}`);
+    if (!response) {
+        throw new Error('User Not Found');
+    }
+    return _userFromFlatEntriesArray(userId, Object.entries(response).flat());
+}
+
+function _userFromFlatEntriesArray(id: string, flatEntriesArray: any[]): User {
+   let user: any = {};
+
+    // The flat entries array contains all keys and values as elements in an array, e.g.:
+    // [key1, value1, key2, value2]
+    for (let j = 0; j < flatEntriesArray.length; j += 2) {
+       let key: string = flatEntriesArray[ j ];
+        let value: string = flatEntriesArray[ j + 1 ];
+        user[ key ] = value;
+    }
+
+    const location: string[] = user.location.split(',');
+    user.location = { longitude: Number(location[ 0 ]), latitude: Number(location[ 1 ]) };
+    user.expertises = user.expertises.split(',');
+    user.interests = user.interests.split(',');
+
+    return {id, ...user};
+}
+```
+Here we have the inverse logic, where we want to split the TAG and GEO fields into a model object. There's also
+the fact that `HGETALL` returns the field names and values in an array, and we need to build the model object from that.
+
+Let's finally take a look at the logic to find matches for a given user:
+```typescript
+async function findMatchesForUser(user: User, radiusKm: number): Promise<User[]> {
+   const allMatches: User[] = await _findMatches(user.interests, user.expertises, user.location, radiusKm);
+      return allMatches.filter(u => u.id !== user.id);
+}
+
+async function _findMatches(expertises: string[], interests: string[], location: Location, radiusKm: number): Promise<User[]> {
+   let query = `@interests:{${interests.join('|')}}`
+      query += ` @expertises:{${expertises.join('|')}}`
+      query += ` @location:[${location.longitude} ${location.latitude} ${radiusKm} km]`;
+
+      const response = await redisearchClient.ft_searchAsync('idx:users', query);
+
+      return _usersFromSearchResponseArray(response);
+}
+
+function _usersFromSearchResponseArray(response: any[]): User[] {
+   let users = [];
+
+      // The search response is an array where the first element indicates the number of results, and then
+      // the array contains all matches in order, one element is they key and the next is the object, e.g.:
+      // [2, key1, object1, key2, object2]
+      for (let i = 1; i <= 2 * response[ 0 ]; i += 2) {
+         const user: User = _userFromFlatEntriesArray(response[ i ].replace('users:', ''), response[ i + 1 ]);
+         users.push(user);
+      }
+
+      return users;
+}
+```
+Here we swap interests and expertises to find the complementary skill set, and we build the query that we used
+previously in the CLI example. we finally call the `FT.SEARCH` functio, and we build the model object from the
+response, which comes as an array.
+
+### Web API
+
+Finally, we can build a trivial web API using express, exposing a `POST /users` endpoint to create a user,
+a `GET /users/:userId` endpoint to retrieve a user, and a `GET /users/:userId/matches` endpoint to find matches
+for the given user (the desired `radiusKm` can be optionally specified as a query parameter)
+```typescript
+app.post('/users', async (req, res) => {
+    const user: User = req.body;
+
+    if (!user || !user.name || !user.expertises || !user.interests || user.location.latitude === undefined || user.location.longitude === undefined) {
+        res.status(400).send('Missing required fields');
+    } else {
+        const userId = await userController.createUser(user);
+        res.status(200).send(userId);
+    }
+});
+
+app.get("/users/:userId", async (req, res) => {
+    try {
+        const user: User = await userController.findUserById(req.params.userId);
+        res.status(200).send(user);
+    } catch (e) {
+        res.status(404).send();
+    }
+});
+
+app.get("/users/:userId/matches", async (req, res) => {
+    try {
+        const radiusKm: number = Number(req.query.radiusKm) || 500;
+        const user: User = await userController.findUserById(req.params.userId);
+        const matches: User[] = await userController.findMatchesForUser(user, radiusKm);
+        res.status(200).send(matches);
+    } catch (e) {
+        console.log(e)
+        res.status(404).send();
+    }
+});
+```

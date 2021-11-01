@@ -375,3 +375,68 @@ app.get("/users/:userId/matches", async (req, res) => {
     }
 });
 ```
+
+# Full code example
+The code used in this blogpost can be found in the GitHub repo. The bakcend together with redis can be launched
+using docker compose:
+```bash
+docker compose up -d --build
+```
+
+The backend API will be exposed on port `8080`. We can see the logs with `docker compose logs`, and use a client
+to query it. Here's an example using httpie:
+```bash
+http :8080/users \
+   name="Alice" \
+   expertises:='["piano", "dancing"]' \
+   interests:='["spanish", "bowling"]' \
+   location:='{"longitude": 2.2948552, "latitude": 48.8736537}'
+
+----------
+HTTP/1.1 200 OK
+Connection: keep-alive
+Content-Length: 36
+Content-Type: text/html; charset=utf-8
+Date: Mon, 01 Nov 2021 05:24:52 GMT
+ETag: W/"24-dMinMMphAGzfWiCs49RBYnyK+r8"
+Keep-Alive: timeout=5
+X-Powered-By: Express
+
+03aef405-ef37-4254-ab3c-a5ddfbc4f04e
+```
+
+```bash
+http ":8080/users/03aef405-ef37-4254-ab3c-a5ddfbc4f04e/matches?radiusKm=15"
+HTTP/1.1 200 OK
+Connection: keep-alive
+Content-Length: 174
+Content-Type: application/json; charset=utf-8
+Date: Mon, 01 Nov 2021 05:26:29 GMT
+ETag: W/"ae-3k2/swmuFaJd7BNHrkgvS/S+h2g"
+Keep-Alive: timeout=5
+X-Powered-By: Express
+```
+```json
+[
+    {
+        "expertises": [
+            "french",
+            " spanish"
+        ],
+        "id": "58e81f09-d9fa-4557-9b8f-9f48a9cec328",
+        "interests": [
+            "piano"
+        ],
+        "location": {
+            "latitude": 48.8583206,
+            "longitude": 2.2945412
+        },
+        "name": "Bob"
+    }
+]
+```
+
+Finally cleanup the environment:
+```bash
+docker compose down --volumes --remove-orphans
+```

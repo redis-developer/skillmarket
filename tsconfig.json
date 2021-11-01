@@ -1,0 +1,11 @@
+{
+    "include": [
+        "./src/**/*.ts"
+    ],
+    "compilerOptions": {
+        "outDir": "./build",
+        "lib": [
+            "ES2021.String"
+        ]
+    }
+}

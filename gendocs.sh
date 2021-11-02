@@ -1,6 +1,7 @@
 #!/bin/bash
 
 docker run \
+  --rm \
   -v $(pwd):/app \
   --workdir /app \
   pandoc/core \

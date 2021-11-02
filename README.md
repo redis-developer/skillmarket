@@ -8,8 +8,9 @@ it will match two users which are geographically close, and which have complemen
 e.g., one of them will know French and want to learn Guitar and the other will know Guitar and want to learn French.
 
 The full source code of our application can be found in GitHub (note that we used some features like [`FT.ADD`](https://oss.redis.com/redisearch/Commands/#ftadd) which now are deprecated):
-- https://github.com/julianmateu/skillmarket-backend
-- https://github.com/manuelaguirre/skillmarket-front
+
+* [Skillmarket Backend](https://github.com/julianmateu/skillmarket-backend)
+* [Skillmarket Frontend](https://github.com/manuelaguirre/skillmarket-front)
 
 Refer to the [official tutorial](https://github.com/RediSearch/redisearch-getting-started) for more information
 about RediSearch.
@@ -24,16 +25,16 @@ docker run -d --name redis redislabs/redisearch:latest
 Here we use the `docker run` command to start the container and pull the image if it is not present. The `-d`
 flag tells docker to launch the container in the background (detached mode). We provide a name with `--name redis`
 which will allow us to refer to this container with a friendly name instead of the hash or the random name
-docker will assing to it. Finally, `redislabs/readisearch:latest` tells docker to use the `latest` version of the
+docker will assign to it. Finally, `redislabs/readisearch:latest` tells docker to use the `latest` version of the
 [`redislabs/readisearch` image](https://hub.docker.com/r/redislabs/redisearch)
 
 Once the image starts, we can use `docker exec` to launch a terminal inside the container, using the `-it` flag
-(interactive tty) and specifying the `redis` name provided before when creating the image, and the `bash` comamnd:
+(interactive tty) and specifying the `redis` name provided before when creating the image, and the `bash` command:
 ```bash
 docker exec -it redis bash
 ```
 
-Once inside the container, let's launch a `redis-cli` instance fo familiarize ourselves with the CLI:
+Once inside the container, let's launch a `redis-cli` instance to familiarize ourselves with the CLI:
 ```bash
 redis-cli
 ```
@@ -145,7 +146,7 @@ docker rm -f redis
 After understanding how the index works, let's build a minimal backend API in NodeJS that will allow us to
 create a user, and query for matching users.
 
-Please note that this is just an example, and we're not providing poper validation or error handling,
+Please note that this is just an example, and we're not providing proper validation or error handling,
 nor other features required for the backend (e.g. authentication).
 
 ### Redis client
@@ -389,8 +390,8 @@ app.get("/users/:userId/matches", async (req, res) => {
 ```
 
 # Full code example
-The code used in this blogpost can be found in the [GitHub repo](https://github.com/julianmateu/skillmarket-blogpost). The bakcend together with redis can be launched
-using docker compose:
+The code used in this blogpost can be found in the [GitHub repo](https://github.com/julianmateu/skillmarket-blogpost).
+The backend together with redis can be launched using docker compose:
 ```bash
 docker compose up -d --build
 ```

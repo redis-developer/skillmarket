@@ -1,6 +1,6 @@
 ## Introduction
 In this blogpost we'll build a social network application using RediSearch and NodeJS. This is the idea that
-we used for our app [Skillmarket](https://devpost.com/software/skill-market-t5cova), which we developed as part of the [Redis "Beyond Cache" Hackathon](https://redisbeyondcache2020.devpost.com/) in 2020.
+we used for our app [Skillmarket](https://www.youtube.com/watch?v=18NPKZy28cQ).
 
 The goal of the application is to match users with complementary skills. It will allow users to register and
 provide some information about themselves, like location, areas of expertise and interests. Using RediSearch
@@ -9,10 +9,12 @@ e.g., one of them will know French and want to learn Guitar and the other will k
 
 The full source code of our application can be found in GitHub (note that we used some features like [`FT.ADD`](https://oss.redis.com/redisearch/Commands/#ftadd) which now are deprecated):
 
-* [Skillmarket Backend](https://github.com/julianmateu/skillmarket-backend)
-* [Skillmarket Frontend](https://github.com/manuelaguirre/skillmarket-front)
+* [Skillmarket Backend]
+* [Skillmarket Frontend]
 
-Refer to the [official tutorial](https://github.com/RediSearch/redisearch-getting-started) for more information
+In this blogpost we'll use a more condensed version of the backend which can be found in the [Skillmarket Blogpost] GitHub repo.
+
+Refer to the [RediSearch Official Tutorial] for more information
 about RediSearch.
 
 ## Familiarizing ourselves with RediSearch by using the CLI
@@ -202,9 +204,10 @@ async function createUserIndex() {
 ### User controller
 
 Let's define the functions that the controller will use to expose a simple API on top of Redis. We'll define 3 functions:
-- `findUserById(userId)`
-- `createUser(user)`
-- `findMatchesForUser(user)`
+
+* `findUserById(userId)`
+* `createUser(user)`
+* `findMatchesForUser(user)`
 
 But first let's define the model we'll use for the users:
 ```typescript
@@ -305,8 +308,8 @@ function _userFromFlatEntriesArray(id: string, flatEntriesArray: any[]): User {
 
     const location: string[] = user.location.split(',');
     user.location = { longitude: Number(location[ 0 ]), latitude: Number(location[ 1 ]) };
-    user.expertises = user.expertises.split(',');
-    user.interests = user.interests.split(',');
+    user.expertises = user.expertises.split(', ');
+    user.interests = user.interests.split(', ');
 
     return {id, ...user};
 }
@@ -390,7 +393,7 @@ app.get("/users/:userId/matches", async (req, res) => {
 ```
 
 # Full code example
-The code used in this blogpost can be found in the [GitHub repo](https://github.com/julianmateu/skillmarket-blogpost).
+The code used in this blogpost can be found in the [skillmarket-blogpost GitHub repo](https://github.com/julianmateu/skillmarket-blogpost).
 The backend together with redis can be launched using docker compose:
 ```bash
 docker compose up -d --build
@@ -453,3 +456,16 @@ Finally cleanup the environment:
 ```bash
 docker compose down --volumes --remove-orphans
 ```
+
+# References
+
+* [Skillmarket Blogpost]
+* [Skillmarket Backend]
+* [Skillmarket Frontend]
+* [RediSearch Official Tutorial]
+
+
+[Skillmarket Blogpost]: https://github.com/julianmateu/skillmarket-blogpost
+[Skillmarket Backend]: https://github.com/julianmateu/skillmarket-backend
+[Skillmarket Frontend]: https://github.com/julianmateu/skillmarket-front
+[RediSearch Official Tutorial]: https://github.com/RediSearch/redisearch-getting-started

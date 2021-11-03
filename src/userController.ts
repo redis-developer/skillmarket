@@ -67,8 +67,8 @@ function _userFromFlatEntriesArray(id: string, flatEntriesArray: any[]): User {
 
     const location: string[] = user.location.split(',');
     user.location = { longitude: Number(location[ 0 ]), latitude: Number(location[ 1 ]) };
-    user.expertises = user.expertises.split(',');
-    user.interests = user.interests.split(',');
+    user.expertises = user.expertises.split(', ');
+    user.interests = user.interests.split(', ');
 
     return {id, ...user};
 }

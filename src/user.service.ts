@@ -1,11 +1,11 @@
 import { v4 as uuid } from 'uuid';
 import { Location, User } from './user.model';
 import { RedisServiceType } from './redis.service';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly redisService: RedisServiceType) {}
+  constructor(@Inject('RedisServiceType') private readonly redisService: RedisServiceType) {}
 
   public async findById(userId: string): Promise<User> {
     const response = await this.redisService.hgetallAsync(`users:${userId}`);
@@ -91,8 +91,8 @@ export class UserService {
       longitude: Number(location[0]),
       latitude: Number(location[1]),
     };
-    user.expertises = user.expertises.split(',');
-    user.interests = user.interests.split(',');
+    user.expertises = user.expertises.split(', ');
+    user.interests = user.interests.split(', ');
 
     return { id, ...user };
   }

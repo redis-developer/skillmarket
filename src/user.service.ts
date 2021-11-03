@@ -5,7 +5,9 @@ import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
-  constructor(@Inject('RedisServiceType') private readonly redisService: RedisServiceType) {}
+  constructor(
+    @Inject('RedisServiceType') private readonly redisService: RedisServiceType,
+  ) {}
 
   public async findById(userId: string): Promise<User> {
     const response = await this.redisService.hgetallAsync(`users:${userId}`);

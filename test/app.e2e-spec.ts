@@ -3,18 +3,19 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { User } from 'src/user.model';
-import { doesNotMatch } from 'assert';
 
-const EXISTING_ID = 'TestId'
-const uuid = require('uuid')
+const EXISTING_ID = 'TestId';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const uuid = require('uuid');
 jest.mock('uuid');
 jest.spyOn(uuid, 'v4').mockReturnValue(EXISTING_ID);
 
 describe('AppController (e2e)', () => {
   const testUser: User = {
     name: 'Charles',
-    expertises: [ 'spanish', 'bowling' ],
-    interests: [ 'piano', 'dancing' ],
+    expertises: ['spanish', 'bowling'],
+    interests: ['piano', 'dancing'],
     location: {
       latitude: 51.5007169,
       longitude: -0.124772,
@@ -29,7 +30,7 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({transform: true}));
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
     await app.init();
   });
 
@@ -41,9 +42,7 @@ describe('AppController (e2e)', () => {
   });
 
   it('should return 400 when POST /users with empty body', () => {
-    return request(app.getHttpServer())
-      .post('/users')
-      .expect(400);
+    return request(app.getHttpServer()).post('/users').expect(400);
   });
 
   it('should return 201 and userId when POST /users, and 200 when GET /users/:userId', (done) => {
@@ -57,7 +56,7 @@ describe('AppController (e2e)', () => {
           .get(`/users/${EXISTING_ID}`)
           .expect(200)
           .expect((res) => {
-            expect(res.body).toStrictEqual({id: EXISTING_ID, ...testUser});
+            expect(res.body).toStrictEqual({ id: EXISTING_ID, ...testUser });
           })
           .end(() => done());
       });

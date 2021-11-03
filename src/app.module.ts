@@ -6,6 +6,9 @@ import { RedisService } from './redis.service';
 @Module({
   imports: [],
   controllers: [UserController],
-  providers: [UserService, {provide: 'RedisServiceType', useClass: RedisService}],
+  providers: [
+    UserService,
+    { provide: 'RedisServiceType', useClass: RedisService },
+  ],
 })
 export class AppModule {}

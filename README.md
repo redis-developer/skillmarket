@@ -1,6 +1,4 @@
-## Introduction
-In this blogpost we'll build a social network application using RediSearch and NodeJS. This is the idea that
-we used for our app [Skillmarket](https://www.youtube.com/watch?v=18NPKZy28cQ).
+## Skillmarket - Build a social network application using RediSearch and NodeJS. 
 
 The goal of the application is to match users with complementary skills. It will allow users to register and
 provide some information about themselves, like location, areas of expertise and interests. Using RediSearch
@@ -12,12 +10,13 @@ The full source code of our application can be found in GitHub (note that we use
 * [Skillmarket Backend]
 * [Skillmarket Frontend]
 
-In this blogpost we'll use a more condensed version of the backend which can be found in the [Skillmarket Blogpost] GitHub repo.
+We'll be using a more condensed version of the backend which can be found in the [Skillmarket Blogpost] GitHub repo.
 
 Refer to the [RediSearch Official Tutorial] for more information
 about RediSearch.
 
 ## Familiarizing ourselves with RediSearch by using the CLI
+
 ### Launching ReadiSearch in a docker container
 
 Let's start by launching redis from the redisearch image using docker:

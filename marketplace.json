@@ -1,0 +1,35 @@
+{
+  "app_name": "Skillmarket",
+  "description": "Building a Social Network Application using RediSearch and NodeJS",
+  "type": "Building Block",
+  "contributed_by": "Community",
+  "repo_url": "https://github.com/redis-developer/skillmarket",
+  "preview_image_url": "https://raw.githubusercontent.com/redis-developer/skillmarket/main/images/app_preview_image.png",
+  "download_url": "https://github.com/redis-developer/skillmarket/archive/refs/heads/main.zip",
+  "hosted_url": "",
+  "quick_deploy": "false",
+  "deploy_buttons": [],
+  "language": [
+    "JavaScript"
+  ],
+  "redis_commands": [
+    "HSET",
+    "FT.SEARCH",
+    "FT.CREATE"
+  ],
+  "redis_features": [
+    "Caching"
+  ],
+  "redis_modules": [
+    "RediSearch"
+  ],
+  "app_image_urls": [],
+  "youtube_url": "https://www.youtube.com/watch?v=18NPKZy28cQ",
+  "special_tags": [
+    "Hackathon"
+  ],
+  "verticals": [
+    "Others"
+  ],
+  "markdown": "https://raw.githubusercontent.com/redis-developer/skillmarket/main/README.md"
+}

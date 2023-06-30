@@ -1,7 +1,7 @@
-## Skillmarket - Build a social network application using RediSearch and NodeJS. 
+## Skillmarket - Build a social network application usingRedis Searchand NodeJS.
 
 The goal of the application is to match users with complementary skills. It will allow users to register and
-provide some information about themselves, like location, areas of expertise and interests. Using RediSearch
+provide some information about themselves, like location, areas of expertise and interests. Using Redis Search
 it will match two users which are geographically close, and which have complementary areas of expertise and interests,
 e.g., one of them will know French and want to learn Guitar and the other will know Guitar and want to learn French.
 
@@ -12,14 +12,14 @@ The full source code of our application can be found in GitHub (note that we use
 
 We'll be using a more condensed version of the backend which can be found in the [Skillmarket Blogpost] GitHub repo.
 
-Refer to the [RediSearch Official Tutorial] for more information
-about RediSearch.
+Refer to the [Redis Search Official Tutorial] for more information
+about Redis Search.
 
-## Familiarizing ourselves with RediSearch by using the CLI
+## Familiarizing ourselves withRedis Searchby using the CLI
 
 ### Launching ReadiSearch in a docker container
 
-Let's start by launching redis from the redisearch image using docker:
+Let's start by launching redis from theRedis Searchimage using docker:
 ```bash
 docker run -d --name redis redislabs/redisearch:latest
 ```
@@ -52,7 +52,7 @@ values are a document with several fields. It's common practise to use the hash 
 of objects, so they can be prefixed with their type, so a key would take the form of `<object_type>:<id>`.
 
 An index will then be used on this hash data structure, to efficiently search for values of given fields.
-The following diagram taken from the RediSearch docs exeplifies this with a database for movies:
+The following diagram taken from theRedis Searchdocs exeplifies this with a database for movies:
 ![secondary-index](./secondary-index.png)
 
 Use the `help @hash` command (or refer to the [documentation](https://redis.io/commands#hash)) to get a list
@@ -79,15 +79,15 @@ HSET users:3 name "Charles" expertises "spanish, bowling" interests "piano, danc
 ```
 
 ### Query to match users
-Here we can see the power of the RediSearch index, which allows us to query by [tags](https://oss.redis.com/redisearch/Tags/) (we provide a list of values,
+Here we can see the power of theRedis Searchindex, which allows us to query by [tags](https://oss.redis.com/redisearch/Tags/) (we provide a list of values,
 such as interests, and it will return any user whose interests match at least one value in the list), and [geo](https://oss.redis.com/redisearch/Query_Syntax/#geo_filters_in_query)
 (we can ask for users whose location is at a given radius in km from a point).
 
-To be able to do this, we have to instruct RediSearch to create an index:
+To be able to do this, we have to instructRedis Searchto create an index:
 ```
 FT.CREATE idx:users ON hash PREFIX 1 "users:" SCHEMA interests TAG expertises TAG location GEO
 ```
-We use the [`FT.CREATE` command](https://oss.redis.com/redisearch/Commands/#ftcreate) to create a full text search index named `idx:users`. We specify `ON hash` to 
+We use the [`FT.CREATE` command](https://oss.redis.com/redisearch/Commands/#ftcreate) to create a full text search index named `idx:users`. We specify `ON hash` to
 indicate that we're indexing the hash table, and provide `PREFIX 1 "users:"` to indicate that we should index
 any document whose key starts with the prefix "users:". Finally we indicate the `SCHEMA` of the index by providing
 a list of fields to index, and their type.
@@ -165,7 +165,7 @@ const client: RediSearchClient = createClient({
 });
 ```
 
-Given that the raw client does not include the functions from the rediSearch module, we have to add them by 
+Given that the raw client does not include the functions from Redis Search, we have to add them by
 defining a new type and adding the commands (this is what the [redis-redisearch](https://www.npmjs.com/package/redis-redisearch) module does, and there's also another module named [redisearchclient](https://www.npmjs.com/package/redisearchclient) which also provides more functions instead of providing arguments as strings).
 ```typescript
 
@@ -349,7 +349,7 @@ function _usersFromSearchResponseArray(response: any[]): User[] {
 ```
 Here we swap interests and expertises to find the complementary skill set, and we build the query that we used
 previously in the CLI example. we finally call the `FT.SEARCH` function, and we build the model object from the
-response, which comes as an array. Results are filtered to exclude the 
+response, which comes as an array. Results are filtered to exclude the
 current user from the matches list.
 
 ### Web API
@@ -467,4 +467,4 @@ docker compose down --volumes --remove-orphans
 [Skillmarket Blogpost]: https://github.com/julianmateu/skillmarket-blogpost
 [Skillmarket Backend]: https://github.com/julianmateu/skillmarket-backend
 [Skillmarket Frontend]: https://github.com/julianmateu/skillmarket-front
-[RediSearch Official Tutorial]: https://github.com/RediSearch/redisearch-getting-started
+[Redis Search Official Tutorial]: https://github.com/RediSearch/redisearch-getting-started
